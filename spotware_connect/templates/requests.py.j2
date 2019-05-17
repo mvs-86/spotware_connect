@@ -1,0 +1,27 @@
+from spotware_connect import protobuf as pb
+
+
+class Requests(object):
+
+    def _sendRequest(self, proto):
+        raise NotImplementedError()
+
+    def _createRequest(self, proto_name, data):
+        del data['self']
+        proto = getattr(pb, proto_name)(**data)
+        return self._sendRequest(proto)
+
+    {% for name, fields in protobufs.items() %}
+    {% set params = [] %}
+    {% set args = [] %}
+        {% for fname, f in fields.items() if not fname == "payloadType" %}
+            {% if f.has_default_value %}
+                {% set x = args.append("%s=%s" % (fname, f.default_value)) %}
+            {% else %}
+                {% set x = params.append(fname) %}
+            {% endif %}
+        {% endfor %}
+    def {{name|replace("ProtoOA", "")}}(self, {{(params+args)|join(", ")}}):
+        return self._createRequest("{{name}}", locals())
+
+    {% endfor %}

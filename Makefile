@@ -26,22 +26,6 @@ export PRINT_HELP_PYSCRIPT
 
 BROWSER := python -c "$$BROWSER_PYSCRIPT"
 
-PROTOBUF_MESSAGES_SRC = ./Open-API-2.0-protobuf-messages
-PROTOBUF_MESSAGES_DST = ./spotware_connect/protobuf
-define PROTOBUF_PYTHON_PYSCRIPT
-path = "./spotware_connect/protobuf/"
-file_names = ("OpenApiCommonMessages_pb2", "OpenApiMessages_pb2")
-for fn in file_names:
-	pyfile = path + fn + ".py"
-	content = ""
-	with open(pyfile) as f:
-		content = f.read()
-	with open(pyfile, "w") as f:
-		new_text = content.replace('import Open', 'from . import Open')
-		f.write(new_text)
-endef
-export PROTOBUF_PYTHON_PYSCRIPT
-
 help:
 	@python -c "$$PRINT_HELP_PYSCRIPT" < $(MAKEFILE_LIST)
 

@@ -11,7 +11,7 @@ with open('README.rst') as readme_file:
 with open('HISTORY.rst') as history_file:
     history = history_file.read()
 
-requirements = ['Click>=6.0', 'protobuf', 'twisted', 'pyopenssl', 'service-identity']
+requirements = ['protobuf', 'twisted', 'pyopenssl', 'service-identity']
 
 setup_requirements = []
 
@@ -31,7 +31,7 @@ setup(
     description="A python client wraper for the publicly available protobuf-based API developed by Spotware",
     entry_points={
         'console_scripts': [
-            'spotware_connect=spotware_connect.cli:main',
+            'spotware_connect=spotware_connect.cli:main'
         ],
     },
     install_requires=requirements,
