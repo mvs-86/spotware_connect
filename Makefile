@@ -88,11 +88,6 @@ install: clean ## install the package to the active Python's site-packages
 	python setup.py install
 
 protobuf: ## generate ProtoBuf py files
-	cd $(PROTOBUF_MESSAGES_SRC) && git pull
-	## Proto files have no version specified, workaround using true at end
-	protoc -I=$(PROTOBUF_MESSAGES_SRC) --python_out=$(PROTOBUF_MESSAGES_DST) $(PROTOBUF_MESSAGES_SRC)/OpenApiCommonModelMessages.proto | true
-	protoc -I=$(PROTOBUF_MESSAGES_SRC) --python_out=$(PROTOBUF_MESSAGES_DST) $(PROTOBUF_MESSAGES_SRC)/OpenApiModelMessages.proto | true
-	protoc -I=$(PROTOBUF_MESSAGES_SRC) --python_out=$(PROTOBUF_MESSAGES_DST) $(PROTOBUF_MESSAGES_SRC)/OpenApiCommonMessages.proto | true
-	protoc -I=$(PROTOBUF_MESSAGES_SRC) --python_out=$(PROTOBUF_MESSAGES_DST) $(PROTOBUF_MESSAGES_SRC)/OpenApiMessages.proto | true
-	## fix imports
-	@python -c "$$PROTOBUF_PYTHON_PYSCRIPT"
+	cd open-api-2.0-protobuf-messages && git checkout . && git pull
+	python spotware_connect\cli.py openapi_generate
+	python spotware_connect\cli.py create_requests

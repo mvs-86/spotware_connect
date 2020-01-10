@@ -8,21 +8,23 @@ from .messages.OpenApiMessages_pb2 import *
 PROTOBUF_PAYLOAD_NAME_REPLACES = [('Oa', 'OA'),
     ('HeartbeatEvent', 'ProtoHeartbeatEvent'), ('ErrorRes', 'ProtoErrorRes'),
     ('OAProto', 'OA'),
-    ('ProtoOAGetAccountsByAccessTokenRes', 'ProtoOAGetAccountListByAccessTokenRes')]
+    ('ProtoOAGetAccountsByAccessTokenRes', 'ProtoOAGetAccountListByAccessTokenRes'),
+    ('ProtoOAGetTickdataRes', 'ProtoOAGetTickDataRes')
+    ]
 
 NAMES = dir(sys.modules[__name__])
 PROTOBUF_CLASSES = [obj for obj in NAMES if obj.startswith('Proto')]
 
 
-def getReqPayloads():
+def getReqPayloads(): # pragma: no cover
     return [obj for obj in NAMES if obj.startswith('ProtoOA') and obj.endswith('Req')]
 
 
-def getResPayloads():
+def getResPayloads(): # pragma: no cover
     return [obj for obj in NAMES if obj.startswith('ProtoOA') and obj.endswith('Res')]
 
 
-def getEventPayloads():
+def getEventPayloads():  # pragma: no cover
     return [obj for obj in NAMES if obj.startswith('ProtoOA') and obj.endswith('Event')]
 
 
@@ -71,7 +73,7 @@ def payload_to_message(payload, msgid=''):
     return ProtoMessage(payload=payload.SerializeToString(), clientMsgId=str(msgid), payloadType=payload.payloadType)
 
 
-def describe_fields(protobufs):
+def describe_fields(protobufs):  # pragma: no cover
     module = sys.modules[__name__]
     fields = dict()
     for pb in protobufs:
@@ -82,6 +84,11 @@ def describe_fields(protobufs):
         fields[class_.__name__] = {f.name: f for f in class_.DESCRIPTOR.fields}
     return fields
 
+def to_dict(proto, fields=[]):
+    if fields:
+        return {f[0].name: f[1] for f in proto.ListFields() if f[0].name in fields}
+
+    return {f[0].name: f[1] for f in proto.ListFields()}
 
 __all__ = ["getReqPayloads", "getResPayloads", "getEventPayloads",
             "payload_name_to_camel", "from_payloadType", "message_from_bytes",

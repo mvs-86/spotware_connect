@@ -1,103 +1,122 @@
+from twisted.internet import defer
 from spotware_connect import protobuf as pb
 
 
 class Requests(object):
 
-    def _sendRequest(self, proto):
-        raise NotImplementedError()
+    reqSendFunc = None
 
-    def _createRequest(self, proto_name, data):
+    def __init__(self, reqSendFunc=None):
+        self.reqSendFunc = reqSendFunc
+
+    def create(self, proto_name, data):
         del data['self']
         proto = getattr(pb, proto_name)(**data)
-        return self._sendRequest(proto)
+        return proto
 
-    def AccountAuthReq(self, ctidTraderAccountId, accessToken):
-        return self._createRequest("ProtoOAAccountAuthReq", locals())
+    def send(self, payload):
+        if not self.reqSendFunc:
+            return defer.fail(Exception("No send function"))
 
-    def AccountLogoutReq(self, ctidTraderAccountId):
-        return self._createRequest("ProtoOAAccountLogoutReq", locals())
+        return defer.maybeDeferred(self.reqSendFunc, payload)
 
-    def AmendOrderReq(self, ctidTraderAccountId, orderId, volume, limitPrice, stopPrice, expirationTimestamp, stopLoss, takeProfit, slippageInPoints, relativeStopLoss, relativeTakeProfit, guaranteedStopLoss, trailingStopLoss, stopTriggerMethod=1):
-        return self._createRequest("ProtoOAAmendOrderReq", locals())
+    def createAndSend(self, proto_name, data):
+        proto = self.create(proto_name, data)
+        return self.send(proto)
 
-    def AmendPositionSLTPReq(self, ctidTraderAccountId, positionId, stopLoss, takeProfit, guaranteedStopLoss, trailingStopLoss, stopLossTriggerMethod=1):
-        return self._createRequest("ProtoOAAmendPositionSLTPReq", locals())
+    def AccountAuth(self, ctidTraderAccountId, accessToken):
+        return self.createAndSend("ProtoOAAccountAuthReq", locals())
 
-    def ApplicationAuthReq(self, clientId, clientSecret):
-        return self._createRequest("ProtoOAApplicationAuthReq", locals())
+    def AccountLogout(self, ctidTraderAccountId):
+        return self.createAndSend("ProtoOAAccountLogoutReq", locals())
 
-    def AssetClassListReq(self, ctidTraderAccountId):
-        return self._createRequest("ProtoOAAssetClassListReq", locals())
+    def AmendOrder(self, ctidTraderAccountId, orderId, volume, limitPrice, stopPrice, expirationTimestamp, stopLoss, takeProfit, slippageInPoints, relativeStopLoss, relativeTakeProfit, guaranteedStopLoss, trailingStopLoss, stopTriggerMethod=1):
+        return self.createAndSend("ProtoOAAmendOrderReq", locals())
 
-    def AssetListReq(self, ctidTraderAccountId):
-        return self._createRequest("ProtoOAAssetListReq", locals())
+    def AmendPositionSLTP(self, ctidTraderAccountId, positionId, stopLoss, takeProfit, guaranteedStopLoss, trailingStopLoss, stopLossTriggerMethod=1):
+        return self.createAndSend("ProtoOAAmendPositionSLTPReq", locals())
 
-    def CancelOrderReq(self, ctidTraderAccountId, orderId):
-        return self._createRequest("ProtoOACancelOrderReq", locals())
+    def ApplicationAuth(self, clientId, clientSecret):
+        return self.createAndSend("ProtoOAApplicationAuthReq", locals())
 
-    def CashFlowHistoryListReq(self, ctidTraderAccountId, fromTimestamp, toTimestamp):
-        return self._createRequest("ProtoOACashFlowHistoryListReq", locals())
+    def AssetClassList(self, ctidTraderAccountId):
+        return self.createAndSend("ProtoOAAssetClassListReq", locals())
 
-    def ClosePositionReq(self, ctidTraderAccountId, positionId, volume):
-        return self._createRequest("ProtoOAClosePositionReq", locals())
+    def AssetList(self, ctidTraderAccountId):
+        return self.createAndSend("ProtoOAAssetListReq", locals())
 
-    def DealListReq(self, ctidTraderAccountId, fromTimestamp, toTimestamp, maxRows):
-        return self._createRequest("ProtoOADealListReq", locals())
+    def CancelOrder(self, ctidTraderAccountId, orderId):
+        return self.createAndSend("ProtoOACancelOrderReq", locals())
 
-    def ExpectedMarginReq(self, ctidTraderAccountId, symbolId, volume):
-        return self._createRequest("ProtoOAExpectedMarginReq", locals())
+    def CashFlowHistoryList(self, ctidTraderAccountId, fromTimestamp, toTimestamp):
+        return self.createAndSend("ProtoOACashFlowHistoryListReq", locals())
 
-    def GetAccountListByAccessTokenReq(self, accessToken):
-        return self._createRequest("ProtoOAGetAccountListByAccessTokenReq", locals())
+    def ClosePosition(self, ctidTraderAccountId, positionId, volume):
+        return self.createAndSend("ProtoOAClosePositionReq", locals())
 
-    def GetCtidProfileByTokenReq(self, accessToken):
-        return self._createRequest("ProtoOAGetCtidProfileByTokenReq", locals())
+    def DealList(self, ctidTraderAccountId, fromTimestamp, toTimestamp, maxRows):
+        return self.createAndSend("ProtoOADealListReq", locals())
 
-    def GetTickDataReq(self, ctidTraderAccountId, symbolId, type, fromTimestamp, toTimestamp):
-        return self._createRequest("ProtoOAGetTickDataReq", locals())
+    def ExpectedMargin(self, ctidTraderAccountId, symbolId, volume):
+        return self.createAndSend("ProtoOAExpectedMarginReq", locals())
 
-    def GetTrendbarsReq(self, ctidTraderAccountId, fromTimestamp, toTimestamp, period, symbolId):
-        return self._createRequest("ProtoOAGetTrendbarsReq", locals())
+    def GetAccountListByAccessToken(self, accessToken):
+        return self.createAndSend("ProtoOAGetAccountListByAccessTokenReq", locals())
 
-    def NewOrderReq(self, ctidTraderAccountId, symbolId, orderType, tradeSide, volume, limitPrice, stopPrice, expirationTimestamp, stopLoss, takeProfit, comment, baseSlippagePrice, slippageInPoints, label, positionId, clientOrderId, relativeStopLoss, relativeTakeProfit, guaranteedStopLoss, trailingStopLoss, timeInForce=2, stopTriggerMethod=1):
-        return self._createRequest("ProtoOANewOrderReq", locals())
+    def GetCtidProfileByToken(self, accessToken):
+        return self.createAndSend("ProtoOAGetCtidProfileByTokenReq", locals())
 
-    def ReconcileReq(self, ctidTraderAccountId):
-        return self._createRequest("ProtoOAReconcileReq", locals())
+    def GetTickData(self, ctidTraderAccountId, symbolId, type, fromTimestamp, toTimestamp):
+        return self.createAndSend("ProtoOAGetTickDataReq", locals())
 
-    def SubscribeDepthQuotesReq(self, ctidTraderAccountId, symbolId):
-        return self._createRequest("ProtoOASubscribeDepthQuotesReq", locals())
+    def GetTrendbars(self, ctidTraderAccountId, fromTimestamp, toTimestamp, period, symbolId):
+        return self.createAndSend("ProtoOAGetTrendbarsReq", locals())
 
-    def SubscribeLiveTrendbarReq(self, ctidTraderAccountId, period, symbolId):
-        return self._createRequest("ProtoOASubscribeLiveTrendbarReq", locals())
+    def MarginCallList(self, ctidTraderAccountId):
+        return self.createAndSend("ProtoOAMarginCallListReq", locals())
 
-    def SubscribeSpotsReq(self, ctidTraderAccountId, symbolId):
-        return self._createRequest("ProtoOASubscribeSpotsReq", locals())
+    def MarginCallUpdate(self, ctidTraderAccountId, marginCall):
+        return self.createAndSend("ProtoOAMarginCallUpdateReq", locals())
 
-    def SymbolByIdReq(self, ctidTraderAccountId, symbolId):
-        return self._createRequest("ProtoOASymbolByIdReq", locals())
+    def NewOrder(self, ctidTraderAccountId, symbolId, orderType, tradeSide, volume, limitPrice, stopPrice, expirationTimestamp, stopLoss, takeProfit, comment, baseSlippagePrice, slippageInPoints, label, positionId, clientOrderId, relativeStopLoss, relativeTakeProfit, guaranteedStopLoss, trailingStopLoss, timeInForce=2, stopTriggerMethod=1):
+        return self.createAndSend("ProtoOANewOrderReq", locals())
 
-    def SymbolCategoryListReq(self, ctidTraderAccountId):
-        return self._createRequest("ProtoOASymbolCategoryListReq", locals())
+    def Reconcile(self, ctidTraderAccountId):
+        return self.createAndSend("ProtoOAReconcileReq", locals())
 
-    def SymbolsForConversionReq(self, ctidTraderAccountId, firstAssetId, lastAssetId):
-        return self._createRequest("ProtoOASymbolsForConversionReq", locals())
+    def SubscribeDepthQuotes(self, ctidTraderAccountId, symbolId):
+        return self.createAndSend("ProtoOASubscribeDepthQuotesReq", locals())
 
-    def SymbolsListReq(self, ctidTraderAccountId):
-        return self._createRequest("ProtoOASymbolsListReq", locals())
+    def SubscribeLiveTrendbar(self, ctidTraderAccountId, period, symbolId):
+        return self.createAndSend("ProtoOASubscribeLiveTrendbarReq", locals())
 
-    def TraderReq(self, ctidTraderAccountId):
-        return self._createRequest("ProtoOATraderReq", locals())
+    def SubscribeSpots(self, ctidTraderAccountId, symbolId):
+        return self.createAndSend("ProtoOASubscribeSpotsReq", locals())
 
-    def UnsubscribeDepthQuotesReq(self, ctidTraderAccountId, symbolId):
-        return self._createRequest("ProtoOAUnsubscribeDepthQuotesReq", locals())
+    def SymbolById(self, ctidTraderAccountId, symbolId):
+        return self.createAndSend("ProtoOASymbolByIdReq", locals())
 
-    def UnsubscribeLiveTrendbarReq(self, ctidTraderAccountId, period, symbolId):
-        return self._createRequest("ProtoOAUnsubscribeLiveTrendbarReq", locals())
+    def SymbolCategoryList(self, ctidTraderAccountId):
+        return self.createAndSend("ProtoOASymbolCategoryListReq", locals())
 
-    def UnsubscribeSpotsReq(self, ctidTraderAccountId, symbolId):
-        return self._createRequest("ProtoOAUnsubscribeSpotsReq", locals())
+    def SymbolsForConversion(self, ctidTraderAccountId, firstAssetId, lastAssetId):
+        return self.createAndSend("ProtoOASymbolsForConversionReq", locals())
 
-    def VersionReq(self, ):
-        return self._createRequest("ProtoOAVersionReq", locals())
+    def SymbolsList(self, ctidTraderAccountId):
+        return self.createAndSend("ProtoOASymbolsListReq", locals())
+
+    def Trader(self, ctidTraderAccountId):
+        return self.createAndSend("ProtoOATraderReq", locals())
+
+    def UnsubscribeDepthQuotes(self, ctidTraderAccountId, symbolId):
+        return self.createAndSend("ProtoOAUnsubscribeDepthQuotesReq", locals())
+
+    def UnsubscribeLiveTrendbar(self, ctidTraderAccountId, period, symbolId):
+        return self.createAndSend("ProtoOAUnsubscribeLiveTrendbarReq", locals())
+
+    def UnsubscribeSpots(self, ctidTraderAccountId, symbolId):
+        return self.createAndSend("ProtoOAUnsubscribeSpotsReq", locals())
+
+    def Version(self):
+        return self.createAndSend("ProtoOAVersionReq", locals())
 

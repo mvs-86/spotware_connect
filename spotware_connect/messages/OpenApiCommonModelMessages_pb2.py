@@ -21,7 +21,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   package='',
   syntax='proto2',
   serialized_options=_b('\n(com.xtrader.protocol.proto.commons.modelB\034ContainerCommonModelMessagesP\001\240\001\001'),
-  serialized_pb=_b('\n OpenApiCommonModelMessages.proto*I\n\x10ProtoPayloadType\x12\x11\n\rPROTO_MESSAGE\x10\x05\x12\r\n\tERROR_RES\x10\x32\x12\x13\n\x0fHEARTBEAT_EVENT\x10\x33*\x84\x02\n\x0eProtoErrorCode\x12\x11\n\rUNKNOWN_ERROR\x10\x01\x12\x17\n\x13UNSUPPORTED_MESSAGE\x10\x02\x12\x13\n\x0fINVALID_REQUEST\x10\x03\x12\x12\n\x0eWRONG_PASSWORD\x10\x04\x12\x11\n\rTIMEOUT_ERROR\x10\x05\x12\x14\n\x10\x45NTITY_NOT_FOUND\x10\x06\x12\x16\n\x12\x43\x41NT_ROUTE_REQUEST\x10\x07\x12\x12\n\x0e\x46RAME_TOO_LONG\x10\x08\x12\x11\n\rMARKET_CLOSED\x10\t\x12\x1b\n\x17\x43ONCURRENT_MODIFICATION\x10\n\x12\x18\n\x14\x42LOCKED_PAYLOAD_TYPE\x10\x0b\x42M\n(com.xtrader.protocol.proto.commons.modelB\x1c\x43ontainerCommonModelMessagesP\x01\xa0\x01\x01')
+  serialized_pb=_b('\n OpenApiCommonModelMessages.proto*I\n\x10ProtoPayloadType\x12\x11\n\rPROTO_MESSAGE\x10\x05\x12\r\n\tERROR_RES\x10\x32\x12\x13\n\x0fHEARTBEAT_EVENT\x10\x33*\xf0\x01\n\x0eProtoErrorCode\x12\x11\n\rUNKNOWN_ERROR\x10\x01\x12\x17\n\x13UNSUPPORTED_MESSAGE\x10\x02\x12\x13\n\x0fINVALID_REQUEST\x10\x03\x12\x11\n\rTIMEOUT_ERROR\x10\x05\x12\x14\n\x10\x45NTITY_NOT_FOUND\x10\x06\x12\x16\n\x12\x43\x41NT_ROUTE_REQUEST\x10\x07\x12\x12\n\x0e\x46RAME_TOO_LONG\x10\x08\x12\x11\n\rMARKET_CLOSED\x10\t\x12\x1b\n\x17\x43ONCURRENT_MODIFICATION\x10\n\x12\x18\n\x14\x42LOCKED_PAYLOAD_TYPE\x10\x0b\x42M\n(com.xtrader.protocol.proto.commons.modelB\x1c\x43ontainerCommonModelMessagesP\x01\xa0\x01\x01')
 )
 
 _PROTOPAYLOADTYPE = _descriptor.EnumDescriptor(
@@ -70,42 +70,38 @@ _PROTOERRORCODE = _descriptor.EnumDescriptor(
       serialized_options=None,
       type=None),
     _descriptor.EnumValueDescriptor(
-      name='WRONG_PASSWORD', index=3, number=4,
+      name='TIMEOUT_ERROR', index=3, number=5,
       serialized_options=None,
       type=None),
     _descriptor.EnumValueDescriptor(
-      name='TIMEOUT_ERROR', index=4, number=5,
+      name='ENTITY_NOT_FOUND', index=4, number=6,
       serialized_options=None,
       type=None),
     _descriptor.EnumValueDescriptor(
-      name='ENTITY_NOT_FOUND', index=5, number=6,
+      name='CANT_ROUTE_REQUEST', index=5, number=7,
       serialized_options=None,
       type=None),
     _descriptor.EnumValueDescriptor(
-      name='CANT_ROUTE_REQUEST', index=6, number=7,
+      name='FRAME_TOO_LONG', index=6, number=8,
       serialized_options=None,
       type=None),
     _descriptor.EnumValueDescriptor(
-      name='FRAME_TOO_LONG', index=7, number=8,
+      name='MARKET_CLOSED', index=7, number=9,
       serialized_options=None,
       type=None),
     _descriptor.EnumValueDescriptor(
-      name='MARKET_CLOSED', index=8, number=9,
+      name='CONCURRENT_MODIFICATION', index=8, number=10,
       serialized_options=None,
       type=None),
     _descriptor.EnumValueDescriptor(
-      name='CONCURRENT_MODIFICATION', index=9, number=10,
-      serialized_options=None,
-      type=None),
-    _descriptor.EnumValueDescriptor(
-      name='BLOCKED_PAYLOAD_TYPE', index=10, number=11,
+      name='BLOCKED_PAYLOAD_TYPE', index=9, number=11,
       serialized_options=None,
       type=None),
   ],
   containing_type=None,
   serialized_options=None,
   serialized_start=112,
-  serialized_end=372,
+  serialized_end=352,
 )
 _sym_db.RegisterEnumDescriptor(_PROTOERRORCODE)
 
@@ -116,7 +112,6 @@ HEARTBEAT_EVENT = 51
 UNKNOWN_ERROR = 1
 UNSUPPORTED_MESSAGE = 2
 INVALID_REQUEST = 3
-WRONG_PASSWORD = 4
 TIMEOUT_ERROR = 5
 ENTITY_NOT_FOUND = 6
 CANT_ROUTE_REQUEST = 7

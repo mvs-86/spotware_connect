@@ -1,36 +1,38 @@
 # -*- coding: utf-8 -*-
 
 """Console script for {{cookiecutter.project_slug}}."""
-import sys
+
 import click
 
 
-@click.group()
-def main():
-    pass
+@click.command()  # pragma: no cover
+def openapi_generate():
+    from pathlib import Path
+    import os, re
+
+    base_path = Path(__file__).parent.parent
+    messages_path = Path(__file__).parent.joinpath('messages')
+    # Generate with protoc tool
+    protos_pattern = "open-api-2.0-protobuf-messages/*(Current)*/*.proto"
+    protoc_command = "protoc -I=\"%s\" --python_out=%s \"%s\""
+    version = ""
+    for proto in base_path.glob(protos_pattern):
+        command = protoc_command % (
+            str(proto.parent.absolute()), str(messages_path), str(proto.absolute()))
+        os.system(command)
+        if not version: # save the version of current api
+            match = re.search("(\d.\d) \(Current\)", str(proto))
+            messages_path.joinpath("OpenApiVersion.py").write_text(
+                "\n\nversion = \"%s\"" % match.groups())
+    # Fix imports
+    for pb in messages_path.glob("OpenApi*_pb2.py"):
+        content = pb.read_text()
+        if re.search("\nimport Open.*", content):
+            fix_content = content.replace('import Open', 'from . import Open')
+            pb.write_text(fix_content)
 
 
-@click.command()
-def fix_imports():
-    import re
-
-    path = "./spotware_connect/protobuf/"
-    file_names = ("OpenApiCommonMessages_pb2", "OpenApiMessages_pb2")
-    for fn in file_names:
-        pyfile = path + fn + ".py"
-        content = ""
-        with open(pyfile) as f:
-            content = f.read()
-
-        if re.search("from . import Open.*", content):
-            continue
-
-        with open(pyfile, "w") as f:
-            new_text = content.replace('import Open', 'from . import Open')
-            f.write(new_text)
-
-
-@click.command()
+@click.command()  # pragma: no cover
 def create_requests():
     from jinja2 import Environment, PackageLoader
     from spotware_connect import protobuf as pb
@@ -42,24 +44,18 @@ def create_requests():
     template = env.get_template('requests.py.j2')
     protobufs_with_fields = pb.describe_fields(pb.getReqPayloads())
     template.stream(protobufs=protobufs_with_fields).dump("./spotware_connect/requests.py")
-
-@click.command()
-def create_responses():
-    from jinja2 import Environment, PackageLoader
-    from spotware_connect import protobuf as pb
-
-    env = Environment(
-        loader=PackageLoader('spotware_connect', 'templates'),
-        trim_blocks=True, lstrip_blocks=True
-    )
-    template = env.get_template('responses.py.j2')
-    protobufs_with_fields = pb.describe_fields(pb.getResPayloads() + pb.getEventPayloads())
-    template.stream(protobufs=protobufs_with_fields).dump("./spotware_connect/responses.py")
+    template = env.get_template('test_requests.py.j2')
+    template.stream(protobufs=protobufs_with_fields).dump("./tests/test_requests.py")
 
 
-main.add_command(fix_imports)
-main.add_command(create_requests)
-main.add_command(create_responses)
+@click.group()  # pragma: no cover
+def main():
+    pass
+
+
+main.add_command(openapi_generate)  # pragma: no cover
+main.add_command(create_requests)  # pragma: no cover
 
 if __name__ == "__main__":
-    sys.exit(main())  # pragma: no cover
+    from sys import exit
+    exit(main())  # pragma: no cover

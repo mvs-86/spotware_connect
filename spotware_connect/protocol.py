@@ -1,161 +1,237 @@
 from datetime import datetime
-from twisted.protocols import basic
-from spotware_connect import protobuf as pb
+from itertools import count
+from twisted.protocols.basic import Int32StringReceiver
+from twisted.internet.protocol import ClientFactory
+from twisted.logger import Logger
+from twisted.internet import defer, task
+from . import protobuf as pb
 
 
-class ProtoMessageSender(object):
-    def sendMessage(self, payload=None, payloadType=None, msgid=None):
-        if not msgid:
-            msgid = self.createMsgid(payload=payload, payloadType=payloadType)
+log = Logger()
+
+class ConnectProtocol(Int32StringReceiver):
+    """docstring for ConnectProtocol."""
+
+    clock = None
+    clientId = None
+    clientSecret = None
+    authorized = False
+    version = None
+    resTimeout = None
+
+    callbackHandler = object()
+
+    hbLoop = None
+    hbLoopInterval = 10
+
+    rpsLoop = None
+    rps = 0
+    rpsLoopInterval = 1.1
+    rpsCounter = count(1)
+    rpsLimit = 5
+
+    defereds = dict()
+
+    def connectionMade(self):
+        super().connectionMade()
+
+        getattr(self.callbackHandler, 'Started', lambda i: None)(self.send)
+
+        if self.clientId and self.clientSecret:
+            self.auth(self.clientId, self.clientSecret)
+
+        if self.hbLoop and not self.hbLoop.running:
+            self.hbLoop.start(self.hbLoopInterval, now=False)
+
+        if self.rpsLoop and not self.rpsLoop.running:
+            self.rpsLoop.start(self.rpsLoopInterval, now=False)
+
+    def connectionLost(self, reason):
+        super().connectionLost(reason)
+        log.warn("Connection lost: {r!r}", r=reason)
+        self.authorized = False
+        self.defereds.clear()
+
+        if self.hbLoop and self.hbLoop.running:
+            self.hbLoop.stop()
+
+        if self.hbLoop and self.hbLoop.running:
+            self.rpsLoop.stop()
+
+        getattr(self.callbackHandler, 'Stoped', lambda: None)()
+
+    def send(self, payload):
+        msgid = self.createMsgid(payload=payload)
         pm = pb.payload_to_message(payload, msgid)
-        self._sendData(pm)
-        return (payload, msgid)
+        defered = self.createResponseDefer(msgid, payload)
+        self.defereds[msgid] = defered
+        self.sendString(pm.SerializeToString())
+        return defered
+
+    def sendString(self, string):
+        self.rps = next(self.rpsCounter) #if self.rps < self.rpsLimit else self.rps
+        if self.rpsLoop and self.rps >= self.rpsLimit:
+            return self.clock.callLater(self.rpsLoopInterval/2, self.sendString, string)
+
+        # log.info("SEND PM {s}", s=string)
+        super().sendString(string)
+
+    def createResponseDefer(self, msgid, payload):
+        name = type(payload).__name__
+
+        def canceler(d):
+            log.warn("Cancel Response {name} {msgid}", msgid=msgid, name=name)
+            self.defereds.pop(msgid, None)
+            d.addCallback(self.getPayloadCancel(payload))
+            d.callback(payload)
+            return d
+
+        def timeout(result, timeout):
+            log.warn("Timeout Response {name} {msgid}: {r!r}", msgid=msgid, name=name, r=result)
+            self.defereds.pop(msgid, None)
+            return result
+
+        d = defer.Deferred(canceler)
+        if self.resTimeout:
+            d.addTimeout(self.resTimeout, self.clock, onTimeoutCancel=timeout)
+        return d
+
+    def auth(self, clientId, secret):
+        def _cb(payload):
+            # log.info("Authorized App {cid}", cid=clientId)
+            self.authorized = True
+            return payload
+
+        def _eb(fail, *args, **kwargs):
+            log.error("Failed Authorize App {cid!r}", cid=clientId)
+            self.authorized = False
+            self.transport.loseConnection()
+            return fail
+
+        req = pb.ProtoOAApplicationAuthReq(
+            clientId=clientId, clientSecret=secret)
+        return self.send(req).addCallbacks(_cb, _eb)
+
+    def sendHeartBeat(self):
+        pm = pb.payload_to_message(pb.ProtoHeartbeatEvent())
+        self.sendString(pm.SerializeToString())
+
+    def clearRps(self):
+        # if self.rpsLoop and self.rps >= self.rpsLimit:
+        #     log.warn(
+        #         "Request Limit reached {total} messages", total=self.rps)
+        self.rps = 0
+        self.rpsCounter = count(1)
 
     def createMsgid(self, payload=None, payloadType=None):
+        assert payload or payloadType, "Expected payload or payloadType to create msgid"
         if not payloadType:
             payloadType = payload.payloadType
         ts = datetime.utcnow().timestamp()
         return "%s#%s" % (payloadType, ts)
 
-    def _sendData(self, proto):
-        raise NotImplementedError()
-
-
-class ProtoMessageReceiver(object):
-    def onReceive(self, pm):
-
-        if isinstance(pm, pb.ProtoHeartbeatEvent):
-            return self.onHeartBeat(pm)
-
-        if isinstance(pm, pb.ProtoErrorRes):
-            return self.onError(pm)
-
-        payload = pb.get_payload(pm)
-        self.onPayload(pm.clientMsgId, payload)
-
-    def onHeartBeat(self, pm):
-        pass
-
-    def onError(self, pm):
-        raise Exception("Error response: " + repr(pm))
-
-    def onPayload(self, msgid, payload):
-        raise NotImplementedError()
-
-
-class ProtoMessageProtocol(basic.Int32StringReceiver, ProtoMessageReceiver, ProtoMessageSender):
-    """docstring for ProtoMessageProtocol."""
-
     def stringReceived(self, data):
         pm = pb.message_from_bytes(data)
-        self.onReceive(pm)
 
-    def _sendData(self, proto):
-        self.sendString(proto.SerializeToString())
+        if isinstance(pm, pb.ProtoHeartbeatEvent):
+            return self.sendHeartBeat()
 
-    def onHeartBeat(self, pm):
-        self.sendProtoBuf(pm)
+        if isinstance(pm, pb.ProtoErrorRes):
+            return self.handleErrorRes(pm)
 
-# class SpotwareConnectClientFactory(protocol.ReconnectingClientFactory):
-#     """docstring for SpotwareConnectClientFactory."""
-#     protocol = ProtobufProtocol
-#     log = None
-#     online = False
-#     connectedProtocol = None
-#     handlers = []
-#     maxDelay = 5*60
-#     live = False
+        msgid = pm.clientMsgId
+        payload = pb.get_payload(pm)
+        return self.handlePayload(msgid, pm, payload)
 
-#     def __init__(self, *handlers, maxSendRetries=5, live=False):
-#         self.live = live
-#         self.maxSendRetries = maxSendRetries
-#         self.addHandlers(*handlers)
-#         self.log = Logger(namespace="SpotwareConnectClientFactory")
+    def handleErrorRes(self, pm):
+        e = Exception("Error received: %s" % (repr(pm), ))
+        return defer.fail(e)
 
-#     def startedConnecting(self, connector):
-#         self.log.debug("{log_namespace} Connection Starting")
-#         super().startedConnecting(connector)
+    def handlePayload(self, msgid, pm, payload):
+        d = self.defereds.pop(msgid, None)
+        d = d if d else self.createResponseDefer(msgid, payload)
+        d.addCallback(self.getPayloadCb(payload))
 
-#     def clientConnectionLost(self, connector, reason):
-#         self.log.debug("{log_namespace} Connection Lost, reconecting")
-#         super().clientConnectionFailed(connector, reason)
+        if not isinstance(payload, pb.ProtoOAErrorRes):
+            d.addErrback(self.getPayloadEb(payload))
 
-#     def clientConnectionFailed(self, connector, reason):
-#         self.log.debug("{log_namespace} Connection Failed, reconecting")
-#         super().clientConnectionFailed(connector, reason)
+        if not payload:
+            log.warn("Invalid Payload: {pm!r}", pm=pm)
 
-#     def addHandlers(self, *handlers):
-#         for h in handlers:
-#             h.client = self
-#             self.handlers.append(h)
+        d.callback(payload)
+        return d
 
-#     def connected(self):
-#         self.log.info("{log_namespace} Connected {type}", type=('LIVE' if self.live else 'DEMO'))
-#         self.resetDelay()
-#         self.online = True
-#         self.dispatchToHandlers("handleConnected", "handleConnectedError", "handleConnectedDone")
+    def getPayloadCb(self, payload, prefix=""):
+        name = payload.__class__.__name__
+        name = name.replace("ProtoOA", "")
+        cbName = name + prefix
 
-#     def disconnected(self):
-#         self.log.warn("{log_namespace} Spotware Disconnected")
-#         self.online = False
-#         self.dispatchToHandlers(
-#             "handleDisconnected", "handleDisconnectedError", "handleDisconnectedDone")
+        return getattr(self.callbackHandler, cbName, lambda payload: payload)
 
-#     def send(self, payload, msgid, retry=0):
-#         # if not self.online or not self.connectedProtocol:
-#         #     self.log.warn('{log_namespace} Failed to send {payload}, resendind in {delay}',
-#         #                   payload=payload.__class__.__name__, delay=self.delay)
-#         #     if retry < self.maxSendRetries:
-#         #         reactor.callLater(self.delay+1, self.send, payload, msgid, retry+1)
-#         #     return
+    def getPayloadEb(self, payload):
+        return self.getPayloadCb(payload, prefix="Fail")
 
-#         self.log.debug("{log_namespace} Sending Protobuf {payload}", payload=payload.__class__.__name__)
-#         if isinstance(payload, pb.ProtoHeartbeatEvent) or isinstance(payload, pb.ProtoMessage):
-#             self.connectedProtocol.sendProtoMessage(payload)
-#         else:
-#             self.connectedProtocol.sendProtoBuf(payload, msgid)
+    def getPayloadCancel(self, payload):
+        return self.getPayloadCb(payload, prefix="Cancel")
 
-#     def handleProtoBufReceived(self, msgid, proto, payload):
+    # Callback
+    def ErrorRes(self, payload):
+        cid = self.factory.clientId
+        log.error("{cid} {e}: {desc}", cid=cid,
+                  e=payload.errorCode, desc=payload.description)
+        return payload
 
-#         self.log.debug(
-#             '{log_namespace} Dispatching ProtoBuf Received {proto}', proto=proto.clientMsgId)
-#         self.dispatchToHandlers(
-#             "handleProtobufReceived", "handleProtobufError", "handleProtobufDone",
-#             msgid=msgid, proto=proto, payload=payload)
 
-#     def dispatchToHandlers(self, callBackName='', errorCallBackName='', bothCallBackName='', result='', **kwargs):
-#         defers = []
-#         for h in self.handlers:
-#             cb, eb, bc =  self._getHandlerCallbacks(h, callBackName, errorCallBackName, bothCallBackName)
-#             d = defer.Deferred()
-#             if cb:
-#                 d.addCallback(cb, **kwargs)
-#             if eb:
-#                 d.addErrback(eb, **kwargs)
-#             if bc:
-#                 d.addBoth(bc, **kwargs)
-#             defers.append(d)
-#             reactor.callLater(0, d.callback, result)
-#             # reactor.callFromThread(d.callback, result)
+class ConnectClientFactory(ClientFactory):
+    protocol = ConnectProtocol
+    clientId = None
+    clientSecret = None
+    resTimeout = None
+    callbackHandler = None
+    clock = None
 
-#     def _getHandlerCallbacks(self, handler, hCallbackName, hErrbackName, hBothName):
-#         hCallback = getattr(handler, hCallbackName) if hasattr(handler, hCallbackName) else None
-#         hErrback = getattr(handler, hErrbackName) if hasattr(handler, hErrbackName) else None
-#         hBoth = getattr(handler, hBothName) if hasattr(handler, hBothName) else None
-#         return (hCallback, hErrback, hBoth)
+    def __init__(self, clientId, clientSecret, callbackHandler=None, resTimeout=5*60, clock=None):
+        self.clientId = clientId
+        self.clientSecret = clientSecret
+        self.resTimeout = resTimeout
+        self.callbackHandler = callbackHandler
+        self.clock = clock
 
-#     @classmethod
-#     def connect(cls, live=False, handlers=[], loggers=[]):
-#         from twisted.internet.ssl import ClientContextFactory
-#         from twisted.logger import globalLogPublisher, STDLibLogObserver
+    def buildProtocol(self, addr):
+        p = super().buildProtocol(addr)
+        p.clock = self.clock
+        p.clientId = self.clientId
+        p.clientSecret = self.clientSecret
+        p.resTimeout = self.resTimeout
+        p.hbLoop = task.LoopingCall(p.sendHeartBeat)
+        p.rpsLoop = task.LoopingCall(p.clearRps)
+        p.hbLoop.clock = p.rpsLoop.clock = self.clock
 
-#         for l in loggers:
-#             globalLogPublisher.addObserver(l)
-#         else:
-#             globalLogPublisher.addObserver(STDLibLogObserver())
+        if self.callbackHandler:
+            p.callbackHandler = self.callbackHandler
+        else:
+            p.callbackHandler = p
 
-#         factory = cls(*handlers)
-#         host = PROXY_LIVE_HOST if live else PROXY_DEMO_HOST
-#         port = PROXY_LIVE_PORT if live else PROXY_DEMO_PORT
-#         reactor.connectSSL(host, port, factory, ClientContextFactory())
-#         return factory
+        return p
+
+    def __repr__(self):
+        data = (type(self).__name__, self.clientId, repr(self.callbackHandler))
+        return "<%s clientId=%s callbackHandler=%s>" % data
+
+PROXY_DEMO_HOST = "demo.ctraderapi.com"
+PROXY_DEMO_PORT = 5035
+PROXY_LIVE_HOST = "live.ctraderapi.com"
+PROXY_LIVE_PORT = 5035
+
+def connect(clientId, clientSecret, reactor=None, live=False, **kwargs):
+    from twisted.internet.ssl import ClientContextFactory
+    if not reactor:
+        from twisted.internet import reactor
+    host = PROXY_LIVE_HOST if live else PROXY_DEMO_HOST
+    port = PROXY_LIVE_PORT if live else PROXY_DEMO_PORT
+    log.info("Connection: Host {h}:{p}", h=host, p=port)
+    f = ConnectClientFactory(clientId, clientSecret, **kwargs)
+    f.clock = reactor
+    return f, reactor.connectSSL(host, port, f, ClientContextFactory())
+
+__all__ = ["ConnectProtocol", "ConnectClientFactory", "connect"]

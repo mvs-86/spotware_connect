@@ -16,7 +16,7 @@ spotware_connect
 
 
 
-A python client wraper for the publicly available protobuf-based API developed by Spotware
+A python client wraper for the publicly available Open API 2 provided by Spotware
 
 
 * Free software: GNU General Public License v3

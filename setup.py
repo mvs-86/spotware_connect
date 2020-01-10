@@ -28,7 +28,7 @@ setup(
         'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',
     ],
-    description="A python client wraper for the publicly available protobuf-based API developed by Spotware",
+    description="A python client wraper for Spotware Open API 2.0",
     entry_points={
         'console_scripts': [
             'spotware_connect=spotware_connect.cli:main'
