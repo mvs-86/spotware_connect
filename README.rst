@@ -2,7 +2,6 @@
 spotware_connect
 ====================
 
-
 .. image:: https://img.shields.io/pypi/v/spotware_connect.svg
         :target: https://pypi.python.org/pypi/spotware_connect
 
@@ -12,6 +11,9 @@ spotware_connect
 .. image:: https://readthedocs.org/projects/spotware_connect/badge/?version=latest
         :target: https://spotware_connect.readthedocs.io/en/latest/?badge=latest
         :alt: Documentation Status
+
+.. image:: https://img.shields.io/github/license/marcus-santos/spotware_connect
+        :alt: License
 
 
 
