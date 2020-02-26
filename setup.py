@@ -41,7 +41,7 @@ setup(
     include_package_data=True,
     keywords='spotware openapi2',
     name='spotware_connect',
-    packages=find_packages(include=['spotware_connect']),
+    packages=find_packages(include=['spotware_connect', 'spotware_connect.messages']),
     setup_requires=setup_requirements,
     test_suite='tests',
     tests_require=test_requirements,
