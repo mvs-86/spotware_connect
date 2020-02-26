@@ -8,6 +8,9 @@ spotware_connect
 .. image:: https://img.shields.io/travis/marcus-santos/spotware_connect.svg
         :target: https://travis-ci.org/marcus-santos/spotware_connect
 
+.. image:: https://coveralls.io/repos/github/marcus-santos/spotware_connect/badge.svg
+        :target: https://coveralls.io/github/marcus-santos/spotware_connect
+
 .. image:: https://readthedocs.org/projects/spotware_connect/badge/?version=latest
         :target: https://spotware_connect.readthedocs.io/en/latest/?badge=latest
         :alt: Documentation Status

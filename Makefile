@@ -36,6 +36,18 @@ for f in files:
 endef
 export PROTOBUF_COMPILE_PYSCRIPT
 
+define COVERALL_PYSCRIPT
+import os
+from subprocess import call
+
+if __name__ == '__main__':
+    if 'TRAVIS' in os.environ:
+        rc = call('coveralls')
+        raise SystemExit(rc)
+    print("Not in Travis CI, skipping coveralls")
+endef
+export COVERALL_PYSCRIPT
+
 BROWSER := python -c "$$BROWSER_PYSCRIPT"
 
 help:
@@ -102,3 +114,6 @@ install: clean ## install the package to the active Python's site-packages
 protobuf: ## generate ProtoBuf py files
 	cd open-api-2.0-protobuf-messages && git checkout . && git pull
 	@python -c "$$PROTOBUF_COMPILE_PYSCRIPT"
+
+coveralls: ## runs coveralls if TRAVIS in env
+	@python -c "$$COVERALL_PYSCRIPT"
