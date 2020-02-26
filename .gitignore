@@ -100,5 +100,3 @@ ENV/
 
 # mypy
 .vscode/
-_trial_temp/
-test_credentials.ini

@@ -24,6 +24,18 @@ for line in sys.stdin:
 endef
 export PRINT_HELP_PYSCRIPT
 
+define PROTOBUF_COMPILE_PYSCRIPT
+import glob, os
+
+base = os.path.abspath(glob.glob("./open-api-2.0-protobuf-messages/*(Current)*/")[0])
+files = glob.glob(base + "\*.proto")
+out = os.path.abspath("./spotware_connect/messages")
+protoc = "protoc -I=\"%s\" --python_out=\"%s\" " % (base, out)
+for f in files:
+	os.system("%s \"%s\" " % (protoc, f))
+endef
+export PROTOBUF_COMPILE_PYSCRIPT
+
 BROWSER := python -c "$$BROWSER_PYSCRIPT"
 
 help:
@@ -89,5 +101,4 @@ install: clean ## install the package to the active Python's site-packages
 
 protobuf: ## generate ProtoBuf py files
 	cd open-api-2.0-protobuf-messages && git checkout . && git pull
-	python spotware_connect\cli.py openapi_generate
-	python spotware_connect\cli.py create_requests
+	@python -c "$$PROTOBUF_COMPILE_PYSCRIPT"

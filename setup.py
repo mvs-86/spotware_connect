@@ -21,24 +21,25 @@ setup(
     author="Marcus Santos",
     author_email='marcus@marcus-santos.com',
     classifiers=[
-        'Development Status :: 2 - Pre-Alpha',
+        'Development Status :: 4 - Beta',
         'Intended Audience :: Developers',
         'License :: OSI Approved :: GNU General Public License v3 (GPLv3)',
         'Natural Language :: English',
+        'Framework :: Twisted',
         'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',
+        'Programming Language :: Python :: 3.8',
     ],
     description="A python client wraper for Spotware Open API 2.0",
     entry_points={
         'console_scripts': [
-            'spotware_connect=spotware_connect.cli:main'
         ],
     },
     install_requires=requirements,
     license="GNU General Public License v3",
     long_description=readme + '\n\n' + history,
     include_package_data=True,
-    keywords='spotware_connect',
+    keywords='spotware openapi2',
     name='spotware_connect',
     packages=find_packages(include=['spotware_connect']),
     setup_requires=setup_requirements,
