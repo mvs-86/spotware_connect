@@ -27,6 +27,34 @@ A python client wraper for Spotware Open API 2 https://connect.spotware.com/docs
 * Free software: GNU General Public License v3
 * Documentation: https://spotware_connect.readthedocs.io.
 
+Quickstart
+--------
+Install with pip::
+    
+    $ pip install spotware-connect
+
+
+A sample to request server version::
+
+    import spotware_connect as sc
+
+    c = sc.Client()
+
+    @c.event
+    def connect():
+        c.emit("VersionReq")
+
+    @c.message(msgtype="VersionRes")
+    def version(msg, payload, version, **kargs):
+        print("Server version: ", version)
+        c.stop()
+    
+    c.start(timeout=5) # optional timeout in seconds
+
+See the usage_ in docs_ for a complete example with App Authorization.
+
+.. _usage: https://spotware-connect.readthedocs.io/en/latest/usage.html
+.. _docs: https://spotware-connect.readthedocs.io/en/latest/
 
 Features
 --------
@@ -35,12 +63,17 @@ Features
 * Use decorators to specify wich messages to process
 * No need to worry about sockets, bytes and message structure
 * Use abbreviated names for sending and receiving payloads: VersionReq translates to ProtoOAVersionReq
-* Requests limit 5/second more information: https://connect.spotware.com/docs/frequently-asked-questions
+* Requests limit 5/second more information about limits here_
+
+.. _here: https://connect.spotware.com/docs/frequently-asked-questions
 
 Credits
 -------
 
 This package was created with Cookiecutter_ and the `audreyr/cookiecutter-pypackage`_ project template.
 
+Using twisted_ for network layer
+
 .. _Cookiecutter: https://github.com/audreyr/cookiecutter
 .. _`audreyr/cookiecutter-pypackage`: https://github.com/audreyr/cookiecutter-pypackage
+.. _twisted: https://github.com/twisted/twisted
