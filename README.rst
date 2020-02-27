@@ -28,9 +28,9 @@ A python client wraper for Spotware Open API 2 https://connect.spotware.com/docs
 * Documentation: https://spotware_connect.readthedocs.io.
 
 Quickstart
---------
+----------
 Install with pip::
-    
+
     $ pip install spotware-connect
 
 
@@ -48,7 +48,7 @@ A sample to request server version::
     def version(msg, payload, version, **kargs):
         print("Server version: ", version)
         c.stop()
-    
+
     c.start(timeout=5) # optional timeout in seconds
 
 See the usage_ in docs_ for a complete example with App Authorization.
