@@ -38,7 +38,7 @@ A sample to request server version::
 
     import spotware_connect as sc
 
-    c = sc.Client()
+    c = sc.Client(live=False) # Demo connection
 
     @c.event
     def connect():
