@@ -19,13 +19,16 @@ spotware_connect
         :alt: License
 
 
-
-
 A python client wraper for Spotware Open API 2 https://connect.spotware.com/docs/open_api_2
 
 
 * Free software: GNU General Public License v3
 * Documentation: https://spotware_connect.readthedocs.io.
+
+Deprecated
+--------
+
+Repo is archived, use the official Spotware OpenApi Python client https://github.com/spotware/OpenApiPy
 
 Quickstart
 ----------
